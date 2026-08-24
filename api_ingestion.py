@@ -18,8 +18,9 @@ PRODUCT_COLUMNS = [
     "spl_id",
     "product_type",
     "marketing_start_date",
-    "application_number",
+    "application_number"
 ]
+
 
 def connection_string():
     return psycopg.connect(
@@ -56,7 +57,10 @@ def connect():
 
 def load_raw_data(api_url, conn: psycopg.Connection):
     data = fetch_data_from_ndc_api(api_url)
-    rows = transform_products(data)
+    prod = transform_products(data)
+    ingred = transform_active_ingredients(data)
+    pharm_class = transform_pharm_class(data)
+    
 
     with conn.cursor() as cur:
         cur.executemany("""
@@ -64,7 +68,23 @@ def load_raw_data(api_url, conn: psycopg.Connection):
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                         ON CONFLICT DO NOTHING
         """,
-                (rows)
+                (prod)
+            )
+        
+        cur.executemany("""
+            INSERT INTO raw.raw_ndc_active_ingredient(product_id, product_ndc, ingredient, strength) 
+            VALUES (%s, %s, %s, %s)
+                        ON CONFLICT DO NOTHING
+        """,
+                (ingred)
+            )
+        
+        cur.executemany("""
+            INSERT INTO raw.raw_ndc_pharm_class(product_id, product_ndc, pharm_class) 
+            VALUES (%s, %s, %s)
+                        ON CONFLICT DO NOTHING
+        """,
+                (pharm_class)
             )
 
 def transform_products(data):
@@ -72,6 +92,30 @@ def transform_products(data):
         tuple(drug.get(column) for column in PRODUCT_COLUMNS)
         for drug in data["results"]
     ]
+
+def transform_active_ingredients(data):
+    return [
+        (
+            drug.get("product_id"),
+            drug.get("product_ndc"),
+            ingredient.get("name"),
+            ingredient.get("strength")
+        )
+        for drug in data["results"]
+        for ingredient in drug.get("active_ingredients", [])
+    ]
+
+def transform_pharm_class(data):
+    return [
+        (
+            drug.get("product_id"),
+            drug.get("product_ndc"),
+            pharm_class
+        )
+        for drug in data["results"]
+        for pharm_class in drug.get("pharm_class", [])
+    ]
+
 
 def main():
     load_env()

@@ -1,4 +1,4 @@
--- Creating raw tables
+-- NDC Drug API Raw Tables
 CREATE TABLE raw_ndc_product (
     product_id TEXT PRIMARY KEY,
     product_ndc TEXT,
@@ -13,20 +13,26 @@ CREATE TABLE raw_ndc_product (
     spl_id TEXT,
     product_type TEXT,
     marketing_start_date DATE,
-    application_number TEXT
+    application_number TEXT,
+    ingested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- raw_ndc_product
--- raw_ndc_active_ingredient
--- raw_ndc_packaging
--- raw_ndc_route
--- raw_ndc_rxcui
--- raw_ndc_nui
--- raw_ndc_pharm_class
--- raw_ndc_pharm_class_epc
--- raw_ndc_pharm_class_moa
--- raw_ndc_unit
--- NDC API endpoint 
+CREATE TABLE raw_ndc_active_ingredient (
+    product_id TEXT,
+    product_ndc TEXT,
+    ingredient TEXT,
+    strength TEXT,
+    ingested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE raw_ndc_pharm_class (
+    product_id TEXT,
+    product_ndc TEXT,
+    pharm_class TEXT,
+    ingested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- NDC Drug API Transformed Tables 
 CREATE TABLE drugs (
     id SERIAL PRIMARY KEY,
     spl_id VARCHAR(50),
